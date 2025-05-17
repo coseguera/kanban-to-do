@@ -321,6 +321,12 @@
             updateTaskStatus(taskId, columnName)
                 .then((success) => {
                     if (success) {
+                        // Check for and remove the "no-tasks" message if it exists
+                        const noTasksMessage = targetColumn.querySelector(".no-tasks");
+                        if (noTasksMessage) {
+                            noTasksMessage.remove();
+                        }
+                        
                         // If successful, move the task to the new column
                         targetColumn.appendChild(draggedElement);
                         
