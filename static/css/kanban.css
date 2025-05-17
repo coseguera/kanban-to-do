@@ -231,8 +231,8 @@ h1 {
     padding: 0;
     border: 1px solid #ddd;
     border-radius: 8px;
-    width: 80%;
-    max-width: 600px;
+    width: 90%;
+    max-width: 700px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     animation: modalFadeIn 0.3s;
 }
@@ -267,6 +267,7 @@ h1 {
 
 .modal-body {
     padding: 20px;
+    overflow: hidden;
 }
 
 .modal-buttons {
@@ -278,6 +279,7 @@ h1 {
 
 .form-group {
     margin-bottom: 15px;
+    max-width: 100%;
 }
 
 .form-group label {
@@ -293,6 +295,7 @@ h1 {
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 14px;
+    box-sizing: border-box;
 }
 
 .form-control:focus {
