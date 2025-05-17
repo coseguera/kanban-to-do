@@ -249,3 +249,40 @@ func (c *Client) UpdateTaskStatus(accessToken string, listID string, taskID stri
 
 	return nil
 }
+
+// UpdateTaskImportance updates a task's importance
+func (c *Client) UpdateTaskImportance(accessToken string, listID string, taskID string, importance string) error {
+	url := fmt.Sprintf("%s/%s/tasks/%s", c.config.GraphURL, listID, taskID)
+
+	// Prepare the update payload
+	payload := map[string]interface{}{
+		"importance": importance,
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("error marshaling task update: %w", err)
+	}
+
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("error creating API request: %w", err)
+	}
+
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error updating task: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("Microsoft Graph API returned error: %s - %s", resp.Status, string(body))
+	}
+
+	return nil
+}

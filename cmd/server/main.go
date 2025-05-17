@@ -60,8 +60,9 @@ func main() {
 	http.HandleFunc("/login", h.LoginHandler)
 	http.HandleFunc("/auth/callback", h.CallbackHandler)
 	http.HandleFunc("/todoLists", h.TodoListsHandler)
-	http.HandleFunc("/list/", h.TasksHandler)               // New route for tasks
-	http.HandleFunc("/api/updateTask", h.UpdateTaskHandler) // API endpoint for updating tasks
+	http.HandleFunc("/list/", h.TasksHandler)                               // New route for tasks
+	http.HandleFunc("/api/updateTask", h.UpdateTaskHandler)                 // API endpoint for updating tasks
+	http.HandleFunc("/api/toggleImportance", h.ToggleTaskImportanceHandler) // API endpoint for toggling importance
 	http.HandleFunc("/logout", h.LogoutHandler)
 
 	// Set up HTTPS server

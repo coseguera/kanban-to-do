@@ -348,3 +348,69 @@ func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Redirect to the home page
 	http.Redirect(w, r, "/", http.StatusFound)
 }
+
+// ToggleTaskImportanceHandler handles toggling a task's importance
+func (h *Handler) ToggleTaskImportanceHandler(w http.ResponseWriter, r *http.Request) {
+	// Only accept POST requests
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get the session ID from the cookie
+	sessionID, err := auth.GetSessionFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the session
+	session, ok := h.SessionManager.GetSession(sessionID)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Refresh the session if needed
+	if err := h.SessionManager.RefreshSessionIfNeeded(sessionID); err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse the request body
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Debug the incoming form values
+	log.Printf("Form values received: %+v", r.Form)
+
+	listID := r.FormValue("listId")
+	taskID := r.FormValue("taskId")
+	isImportant := r.FormValue("isImportant")
+
+	log.Printf("Parsed values - listID: '%s', taskID: '%s', isImportant: '%s'", listID, taskID, isImportant)
+
+	if listID == "" || taskID == "" || isImportant == "" {
+		http.Error(w, fmt.Sprintf("Missing required parameters (listId: %s, taskId: %s, isImportant: %s)",
+			listID, taskID, isImportant), http.StatusBadRequest)
+		return
+	}
+
+	// Determine the importance value
+	importance := "normal"
+	if isImportant == "true" {
+		importance = "high"
+	}
+
+	// Update the task importance
+	if err := h.Client.UpdateTaskImportance(session.AccessToken, listID, taskID, importance); err != nil {
+		http.Error(w, "Error updating task importance: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Send a success response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Task importance updated successfully"))
+}

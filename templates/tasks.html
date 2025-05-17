@@ -130,6 +130,21 @@
             margin-top: 8px;
             display: block;
         }
+        .importance-star {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            color: #ccc;
+            transition: color 0.2s;
+        }
+        .importance-star:hover {
+            color: #ffc107;
+        }
+        .task-card.important .importance-star {
+            color: #ffc107;
+        }
         .nav-buttons {
             display: flex;
             justify-content: space-between;
@@ -234,6 +249,7 @@
                                      ondragstart="drag(event)" 
                                      data-task-id="{{.ID}}">
                                     <div class="task-title">{{.Title}}</div>
+                                    <div class="importance-star" onclick="toggleImportance(event, '{{.ID}}', {{if .Importance}}true{{else}}false{{end}})">★</div>
                                     {{if .Categories}}
                                         <div class="task-categories">
                                             {{range .Categories}}
@@ -450,6 +466,101 @@
             setTimeout(() => {
                 toast.style.display = "none";
             }, 3000);
+        }
+        
+        // Toggle task importance
+        function toggleImportance(event, taskId, currentState) {
+            // Prevent event from propagating to parent elements (avoid triggering drag)
+            event.stopPropagation();
+            
+            // Get the task card element
+            const taskCard = event.target.closest('.task-card');
+            if (!taskCard) return;
+            
+            // Show loading overlay
+            document.getElementById("loadingOverlay").style.display = "flex";
+            
+            // New importance state is the opposite of the current state
+            const newImportance = !currentState;
+            
+            // Debug logs
+            console.log("Toggling importance for task:", taskId);
+            console.log("Current importance state:", currentState);
+            console.log("New importance state:", newImportance);
+            
+            // Send the update to the server
+            updateTaskImportance(taskId, newImportance)
+                .then((success) => {
+                    if (success) {
+                        // Update the UI to reflect the new importance state
+                        if (newImportance) {
+                            taskCard.classList.add("important");
+                        } else {
+                            taskCard.classList.remove("important");
+                        }
+                        
+                        // Update the onclick handler with the new state
+                        const starElement = taskCard.querySelector('.importance-star');
+                        if (starElement) {
+                            starElement.setAttribute("onclick", `toggleImportance(event, '${taskId}', ${newImportance})`);
+                        }
+                        
+                        // Show success message
+                        if (newImportance) {
+                            showToast("Task marked as important", "success");
+                        } else {
+                            showToast("Task importance removed", "success");
+                        }
+                    } else {
+                        showToast("Failed to update task importance. Please try again.", "error");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error updating task importance:", error);
+                    showToast("Error: " + error.message, "error");
+                })
+                .finally(() => {
+                    // Hide loading overlay
+                    document.getElementById("loadingOverlay").style.display = "none";
+                });
+        }
+        
+        // Function to update task importance on the server
+        async function updateTaskImportance(taskId, isImportant) {
+            try {
+                // Use URL encoded form data
+                const params = new URLSearchParams();
+                params.append("listId", listId);
+                params.append("taskId", taskId);
+                params.append("isImportant", isImportant.toString());
+                
+                // Debug logs
+                console.log("Sending importance update request with:");
+                console.log("listId:", listId);
+                console.log("taskId:", taskId);
+                console.log("isImportant:", isImportant.toString());
+                
+                const response = await fetch("/api/toggleImportance", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params.toString(),
+                    credentials: "same-origin"
+                });
+                
+                if (!response.ok) {
+                    // Get the error text from the response
+                    const errorText = await response.text();
+                    console.error("Server error:", errorText);
+                    throw new Error(errorText || "Server error");
+                }
+                
+                return response.ok;
+            } catch (error) {
+                console.error("Error updating task importance:", error);
+                return false;
+            }
         }
     </script>
 </body>
