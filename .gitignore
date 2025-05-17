@@ -6,7 +6,6 @@ certs/
 
 # Go build/test/dependency files
 /bin/
-/pkg/
 *.exe
 *.exe~
 *.dll
