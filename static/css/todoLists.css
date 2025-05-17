@@ -1,0 +1,37 @@
+/* Todo Lists page specific styles */
+.container { 
+    max-width: 800px; 
+    margin: 0 auto; 
+    padding: 20px; 
+    border-radius: 5px; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    background-color: white;
+}
+ul { 
+    list-style-type: none; 
+    padding: 0; 
+}
+li { 
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    border-left: 5px solid #0078d4;
+}
+.list-name { 
+    font-weight: bold; 
+    font-size: 18px;
+    color: #0078d4;
+    text-decoration: none;
+    display: block;
+}
+.list-name:hover {
+    text-decoration: underline;
+    color: #005a9e;
+}
+.no-lists { 
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    color: #666;
+}

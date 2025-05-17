@@ -65,6 +65,10 @@ func main() {
 	http.HandleFunc("/api/toggleImportance", h.ToggleTaskImportanceHandler) // API endpoint for toggling importance
 	http.HandleFunc("/logout", h.LogoutHandler)
 
+	// Serve static files
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	// Set up HTTPS server
 	certFile := filepath.Join("certs", "server.crt")
 	keyFile := filepath.Join("certs", "server.key")

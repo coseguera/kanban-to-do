@@ -2,49 +2,8 @@
 <html>
 <head>
     <title>Your To Do Lists</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.6; }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #0078d4; }
-        ul { list-style-type: none; padding: 0; }
-        li { 
-            margin: 10px 0;
-            padding: 15px;
-            border-radius: 5px;
-            background-color: #f5f5f5;
-            border-left: 5px solid #0078d4;
-        }
-        .list-name { 
-            font-weight: bold; 
-            font-size: 18px;
-            color: #0078d4;
-            text-decoration: none;
-            display: block;
-        }
-        .list-name:hover {
-            text-decoration: underline;
-            color: #005a9e;
-        }
-        .logout { 
-            background-color: #d9534f;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-top: 20px;
-            display: inline-block;
-            text-decoration: none;
-        }
-        .logout:hover { background-color: #c9302c; }
-        .no-lists { 
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            color: #666;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="/static/css/todoLists.css">
 </head>
 <body>
     <div class="container">
@@ -62,7 +21,7 @@
                 <p>No to-do lists found. Create some in your Microsoft To Do app!</p>
             </div>
         {{end}}
-        <a href="/logout" class="logout">Logout</a>
+        <a href="/logout" class="logout-button button">Logout</a>
     </div>
 </body>
 </html>
