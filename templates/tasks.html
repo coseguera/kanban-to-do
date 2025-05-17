@@ -90,21 +90,6 @@
         .task-card.important {
             position: relative;
         }
-        .task-card.important::after {
-            content: "!";
-            position: absolute;
-            right: 10px;
-            top: 10px;
-            background-color: #e74c3c;
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
         .task-title { 
             font-size: 16px;
             font-weight: 500;
@@ -247,9 +232,10 @@
                                 <div class="task-card {{if .Status}}completed{{end}} {{if .Importance}}important{{end}}" 
                                      draggable="true" 
                                      ondragstart="drag(event)" 
-                                     data-task-id="{{.ID}}">
+                                     data-task-id="{{.ID}}"
+                                     data-importance="{{if .Importance}}true{{else}}false{{end}}">
                                     <div class="task-title">{{.Title}}</div>
-                                    <div class="importance-star" onclick="toggleImportance(event, '{{.ID}}', {{if .Importance}}true{{else}}false{{end}})">★</div>
+                                    <div class="importance-star" onclick="toggleImportance(event, this.parentElement)">★</div>
                                     {{if .Categories}}
                                         <div class="task-categories">
                                             {{range .Categories}}
@@ -469,13 +455,15 @@
         }
         
         // Toggle task importance
-        function toggleImportance(event, taskId, currentState) {
+        function toggleImportance(event, taskCard) {
             // Prevent event from propagating to parent elements (avoid triggering drag)
             event.stopPropagation();
             
-            // Get the task card element
-            const taskCard = event.target.closest('.task-card');
             if (!taskCard) return;
+            
+            // Get task ID and current importance state from the task card
+            const taskId = taskCard.getAttribute('data-task-id');
+            const currentState = taskCard.getAttribute('data-importance') === 'true';
             
             // Show loading overlay
             document.getElementById("loadingOverlay").style.display = "flex";
@@ -499,11 +487,8 @@
                             taskCard.classList.remove("important");
                         }
                         
-                        // Update the onclick handler with the new state
-                        const starElement = taskCard.querySelector('.importance-star');
-                        if (starElement) {
-                            starElement.setAttribute("onclick", `toggleImportance(event, '${taskId}', ${newImportance})`);
-                        }
+                        // Update the data attribute with the new state
+                        taskCard.setAttribute('data-importance', newImportance.toString());
                         
                         // Show success message
                         if (newImportance) {
