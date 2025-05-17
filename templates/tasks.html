@@ -58,6 +58,7 @@
             flex-grow: 1;
             overflow-y: auto;
             max-height: 70vh;
+            min-height: 200px;
         }
         .task-card {
             background-color: white;
@@ -67,6 +68,16 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             position: relative;
             border-left: 5px solid #0078d4;
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .task-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .task-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
         }
         .task-card.completed {
             border-left-color: #4CAF50;
@@ -158,6 +169,52 @@
         .kanban-column:nth-child(2) .task-card { border-left-color: #007bff; }
         .kanban-column:nth-child(3) .column-header { background-color: #28a745; }
         .kanban-column:nth-child(3) .task-card { border-left-color: #28a745; }
+        
+        /* Loading indicator */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0078d4;
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #333;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1001;
+        }
+        .toast.success {
+            background-color: #28a745;
+        }
+        .toast.error {
+            background-color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -167,12 +224,15 @@
         
         <div class="kanban-board">
             {{range .Columns}}
-                <div class="kanban-column">
+                <div class="kanban-column" data-column="{{.Title}}">
                     <div class="column-header">{{.Title}}</div>
-                    <div class="column-content">
+                    <div class="column-content" ondragover="allowDrop(event)" ondrop="drop(event)">
                         {{if .Tasks}}
                             {{range .Tasks}}
-                                <div class="task-card {{if .Status}}completed{{end}} {{if .Importance}}important{{end}}">
+                                <div class="task-card {{if .Status}}completed{{end}} {{if .Importance}}important{{end}}" 
+                                     draggable="true" 
+                                     ondragstart="drag(event)" 
+                                     data-task-id="{{.ID}}">
                                     <div class="task-title">{{.Title}}</div>
                                     {{if .Categories}}
                                         <div class="task-categories">
@@ -201,5 +261,190 @@
             <a href="/logout" class="button logout-button">Logout</a>
         </div>
     </div>
+    
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // Store the list ID for API calls
+        const listId = "{{.ListID}}";
+        
+        // Debug on page load
+        console.log("List ID at page load:", listId);
+        
+        // Drag and drop functionality
+        function drag(event) {
+            event.dataTransfer.setData("taskId", event.target.getAttribute("data-task-id"));
+            event.target.classList.add("dragging");
+        }
+        
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+        
+        function drop(event) {
+            event.preventDefault();
+            
+            // Get the task ID from the dragged element
+            const taskId = event.dataTransfer.getData("taskId");
+            const draggedElement = document.querySelector(`[data-task-id="${taskId}"]`);
+            
+            // Remove the dragging class
+            draggedElement.classList.remove("dragging");
+            
+            // Determine the target column
+            let targetColumn = event.target;
+            while (targetColumn && !targetColumn.classList.contains("column-content")) {
+                targetColumn = targetColumn.parentElement;
+            }
+            
+            if (!targetColumn) return;
+            
+            // Get the column name
+            const columnName = targetColumn.parentElement.getAttribute("data-column");
+            
+            // Show loading overlay
+            document.getElementById("loadingOverlay").style.display = "flex";
+            
+            // Debug the values
+            console.log("About to send update request:");
+            console.log("- List ID:", listId);
+            console.log("- Task ID:", taskId);
+            console.log("- Column Name:", columnName);
+            
+            // Send the update to the server
+            updateTaskStatus(taskId, columnName)
+                .then((success) => {
+                    if (success) {
+                        // If successful, move the task to the new column
+                        targetColumn.appendChild(draggedElement);
+                        
+                        // Update the UI based on the new column
+                        if (columnName === "Done") {
+                            draggedElement.classList.add("completed");
+                            
+                            // Remove "Doing" category tag
+                            const doingTags = draggedElement.querySelectorAll(".category-tag");
+                            doingTags.forEach(tag => {
+                                if (tag.textContent.toLowerCase() === "doing") {
+                                    tag.remove();
+                                }
+                            });
+                        } else if (columnName === "Doing") {
+                            draggedElement.classList.remove("completed");
+                            
+                            // Add "Doing" category tag if it doesn't exist
+                            let hasDoingTag = false;
+                            const categories = draggedElement.querySelector(".task-categories");
+                            const tags = categories ? categories.querySelectorAll(".category-tag") : [];
+                            
+                            tags.forEach(tag => {
+                                if (tag.textContent.toLowerCase() === "doing") {
+                                    hasDoingTag = true;
+                                }
+                            });
+                            
+                            if (!hasDoingTag) {
+                                if (!categories) {
+                                    // Create categories div if it doesn't exist
+                                    const categoriesDiv = document.createElement("div");
+                                    categoriesDiv.className = "task-categories";
+                                    draggedElement.appendChild(categoriesDiv);
+                                    
+                                    const doingTag = document.createElement("span");
+                                    doingTag.className = "category-tag";
+                                    doingTag.textContent = "Doing";
+                                    categoriesDiv.appendChild(doingTag);
+                                } else {
+                                    const doingTag = document.createElement("span");
+                                    doingTag.className = "category-tag";
+                                    doingTag.textContent = "Doing";
+                                    categories.appendChild(doingTag);
+                                }
+                            }
+                        } else if (columnName === "Not Started") {
+                            draggedElement.classList.remove("completed");
+                            
+                            // Remove "Doing" category tag
+                            const doingTags = draggedElement.querySelectorAll(".category-tag");
+                            doingTags.forEach(tag => {
+                                if (tag.textContent.toLowerCase() === "doing") {
+                                    tag.remove();
+                                }
+                            });
+                        }
+                        
+                        // Show success message
+                        showToast("Task moved successfully!", "success");
+                    } else {
+                        showToast("Failed to update task. Please try again.", "error");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error updating task:", error);
+                    showToast("Error: " + error.message, "error");
+                })
+                .finally(() => {
+                    // Hide loading overlay
+                    document.getElementById("loadingOverlay").style.display = "none";
+                });
+        }
+        
+        // Function to update task status on the server
+        async function updateTaskStatus(taskId, columnName) {
+            try {
+                // Use URL encoded form data instead of FormData
+                const params = new URLSearchParams();
+                params.append("listId", listId);
+                params.append("taskId", taskId);
+                params.append("column", columnName);
+                
+                // Debug logs
+                console.log("Sending request with:");
+                console.log("listId:", listId);
+                console.log("taskId:", taskId);
+                console.log("column:", columnName);
+                
+                const response = await fetch("/api/updateTask", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params.toString(),
+                    credentials: "same-origin"
+                });
+                
+                if (!response.ok) {
+                    // Get the error text from the response
+                    const errorText = await response.text();
+                    console.error("Server error:", errorText);
+                    throw new Error(errorText || "Server error");
+                }
+                
+                return response.ok;
+            } catch (error) {
+                console.error("Error updating task:", error);
+                return false;
+            }
+        }
+        
+        // Show toast notification
+        function showToast(message, type) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.className = "toast " + type;
+            toast.style.display = "block";
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toast.style.display = "none";
+            }, 3000);
+        }
+    </script>
 </body>
 </html>

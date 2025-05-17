@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -226,6 +227,110 @@ func (h *Handler) TasksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tmpl.Execute(w, taskViewModel)
+}
+
+// UpdateTaskHandler handles updating task status and categories when dragged between columns
+func (h *Handler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
+	// Only accept POST requests
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get the session ID from the cookie
+	sessionID, err := auth.GetSessionFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the session
+	session, ok := h.SessionManager.GetSession(sessionID)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Refresh the session if needed
+	if err := h.SessionManager.RefreshSessionIfNeeded(sessionID); err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse the request body
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Debug the incoming form values
+	log.Printf("Form values received: %+v", r.Form)
+
+	listID := r.FormValue("listId")
+	taskID := r.FormValue("taskId")
+	column := r.FormValue("column")
+
+	log.Printf("Parsed values - listID: '%s', taskID: '%s', column: '%s'", listID, taskID, column)
+
+	if listID == "" || taskID == "" || column == "" {
+		http.Error(w, fmt.Sprintf("Missing required parameters (listId: %s, taskId: %s, column: %s)",
+			listID, taskID, column), http.StatusBadRequest)
+		return
+	}
+
+	// Get the task to preserve any existing categories
+	taskResp, err := h.Client.GetListTasks(session.AccessToken, listID)
+	if err != nil {
+		http.Error(w, "Error fetching task: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Find the task in the response
+	var targetTask *models.Task
+	for i := range taskResp.Value {
+		if taskResp.Value[i].ID == taskID {
+			targetTask = &taskResp.Value[i]
+			break
+		}
+	}
+
+	if targetTask == nil {
+		http.Error(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	// Get current categories and filter out any "Doing" category
+	categories := []string{}
+	for _, cat := range targetTask.Categories {
+		if !strings.EqualFold(cat, "Doing") {
+			categories = append(categories, cat)
+		}
+	}
+
+	// Determine new status and categories based on the target column
+	status := "notStarted"
+	if column == "Done" {
+		status = "completed"
+	} else if column == "Doing" {
+		status = "notStarted"
+		categories = append(categories, "Doing")
+	} else if column == "Not Started" {
+		status = "notStarted"
+		// No need to add categories, as we already filtered out "Doing"
+	} else {
+		// Unknown column
+		log.Printf("Warning: Unknown column name received: %s", column)
+	}
+
+	// Update the task
+	if err := h.Client.UpdateTaskStatus(session.AccessToken, listID, taskID, status, categories); err != nil {
+		http.Error(w, "Error updating task: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Send a success response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Task updated successfully"))
 }
 
 // LogoutHandler handles the logout request
