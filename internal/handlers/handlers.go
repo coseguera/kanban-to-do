@@ -568,3 +568,66 @@ func (h *Handler) UpdateTaskDetailsHandler(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Task updated successfully"))
 }
+
+// CreateTaskHandler handles creating a new task
+func (h *Handler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
+	// Only accept POST requests
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get the session ID from the cookie
+	sessionID, err := auth.GetSessionFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the session
+	session, ok := h.SessionManager.GetSession(sessionID)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Refresh the session if needed
+	if err := h.SessionManager.RefreshSessionIfNeeded(sessionID); err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse the form
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Extract form values
+	listID := r.FormValue("listId")
+	title := r.FormValue("title")
+
+	if listID == "" || title == "" {
+		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		return
+	}
+
+	// Create the task
+	taskID, err := h.Client.CreateTask(session.AccessToken, listID, title)
+	if err != nil {
+		http.Error(w, "Error creating task: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Prepare the response
+	response := map[string]string{
+		"taskId": taskID,
+	}
+
+	// Send JSON response
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+}

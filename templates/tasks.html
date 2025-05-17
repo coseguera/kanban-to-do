@@ -46,6 +46,12 @@
                             </div>
                         {{end}}
                     </div>
+                    {{if eq .Title "Not Started"}}
+                    <div class="add-task-container">
+                        <input type="text" id="newTaskTitle" placeholder="Enter task title" class="new-task-input">
+                        <button id="addTaskButton" class="add-task-button" onclick="addNewTask()">+</button>
+                    </div>
+                    {{end}}
                 </div>
             {{end}}
         </div>

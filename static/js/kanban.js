@@ -607,6 +607,122 @@ function updateTaskCardInUI(taskId, task) {
     }
 }
 
+// ==================== Add New Task Function ====================
+
+// Add a new task
+async function addNewTask() {
+    // Get the task title from the input
+    const input = document.getElementById('newTaskTitle');
+    const title = input.value.trim();
+    
+    // Validate input
+    if (!title) {
+        showToast("Please enter a task title", "error");
+        return;
+    }
+    
+    // Show loading overlay
+    document.getElementById("loadingOverlay").style.display = "flex";
+    
+    try {
+        // Create the task on the server
+        const taskId = await createNewTask(title);
+        
+        if (taskId) {
+            // Clear the input
+            input.value = '';
+            
+            // Refresh the column or add the new task to the UI
+            const columnContent = document.querySelector('.kanban-column[data-column="Not Started"] .column-content');
+            
+            // Remove the "no tasks" message if it exists
+            const noTasksMessage = columnContent.querySelector(".no-tasks");
+            if (noTasksMessage) {
+                noTasksMessage.remove();
+            }
+            
+            // Create a new task card element
+            const taskCard = document.createElement('div');
+            taskCard.className = 'task-card';
+            taskCard.draggable = true;
+            taskCard.setAttribute('ondragstart', 'drag(event)');
+            taskCard.setAttribute('data-task-id', taskId);
+            taskCard.setAttribute('data-importance', 'false');
+            taskCard.setAttribute('onclick', 'openTaskDetails(event, this)');
+            
+            // Create task title element
+            const taskTitle = document.createElement('div');
+            taskTitle.className = 'task-title';
+            taskTitle.textContent = title;
+            
+            // Create importance star element
+            const importanceStar = document.createElement('div');
+            importanceStar.className = 'importance-star';
+            importanceStar.textContent = '★';
+            importanceStar.setAttribute('onclick', 'toggleImportance(event, this.parentElement)');
+            
+            // Add elements to task card
+            taskCard.appendChild(taskTitle);
+            taskCard.appendChild(importanceStar);
+            
+            // Add the task card to the column
+            columnContent.appendChild(taskCard);
+            
+            showToast("Task added successfully", "success");
+        } else {
+            showToast("Failed to add task", "error");
+        }
+    } catch (error) {
+        console.error("Error adding task:", error);
+        showToast("Error: " + error.message, "error");
+    } finally {
+        // Hide loading overlay
+        document.getElementById("loadingOverlay").style.display = "none";
+    }
+}
+
+// Create a new task on the server
+async function createNewTask(title) {
+    try {
+        const params = new URLSearchParams();
+        params.append("listId", listId);
+        params.append("title", title);
+        
+        const response = await fetch("/api/createTask", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: params.toString(),
+            credentials: "same-origin"
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Server error:", errorText);
+            throw new Error(errorText || "Server error");
+        }
+        
+        const result = await response.json();
+        return result.taskId;
+    } catch (error) {
+        console.error("Error creating task:", error);
+        throw error;
+    }
+}
+
+// Event listener for Enter key in the new task input
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('newTaskTitle');
+    if (input) {
+        input.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                addNewTask();
+            }
+        });
+    }
+});
+
 // Event Listeners for Modal
 if (closeBtn) {
     closeBtn.addEventListener('click', () => {

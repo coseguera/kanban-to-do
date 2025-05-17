@@ -376,3 +376,53 @@ func (c *Client) UpdateTaskDetails(accessToken string, listID string, taskID str
 
 	return nil
 }
+
+// CreateTask creates a new task in a list
+func (c *Client) CreateTask(accessToken string, listID string, title string) (string, error) {
+	url := fmt.Sprintf("%s/%s/tasks", c.config.GraphURL, listID)
+
+	// Build the request body with minimal required fields
+	requestBody := map[string]interface{}{
+		"title": title,
+	}
+
+	// Convert to JSON
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return "", fmt.Errorf("error creating JSON request: %w", err)
+	}
+
+	// Create POST request
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", fmt.Errorf("error creating API request: %w", err)
+	}
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error calling Microsoft Graph API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("Microsoft Graph API returned error: %s - %s", resp.Status, string(body))
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading API response: %w", err)
+	}
+
+	// Parse the response to get the task ID
+	var task models.Task
+	if err := json.Unmarshal(body, &task); err != nil {
+		return "", fmt.Errorf("error parsing API response: %w", err)
+	}
+
+	return task.ID, nil
+}
