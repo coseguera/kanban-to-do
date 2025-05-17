@@ -286,3 +286,93 @@ func (c *Client) UpdateTaskImportance(accessToken string, listID string, taskID 
 
 	return nil
 }
+
+// GetTaskDetails retrieves details for a specific task
+func (c *Client) GetTaskDetails(accessToken string, listID string, taskID string) (*models.Task, error) {
+	url := fmt.Sprintf("%s/%s/tasks/%s", c.config.GraphURL, listID, taskID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating API request: %w", err)
+	}
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error calling Microsoft Graph API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Microsoft Graph API returned error: %s - %s", resp.Status, string(body))
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading API response: %w", err)
+	}
+
+	var task models.Task
+	if err := json.Unmarshal(body, &task); err != nil {
+		return nil, fmt.Errorf("error parsing API response: %w", err)
+	}
+
+	return &task, nil
+}
+
+// UpdateTaskDetails updates a task's details
+func (c *Client) UpdateTaskDetails(accessToken string, listID string, taskID string, title string, status string, importance string, dueDate string, categories []string) error {
+	url := fmt.Sprintf("%s/%s/tasks/%s", c.config.GraphURL, listID, taskID)
+
+	// Build the request body
+	requestBody := make(map[string]interface{})
+	requestBody["title"] = title
+	requestBody["importance"] = importance
+
+	// Handle status
+	if status == "completed" {
+		requestBody["status"] = "completed"
+	} else {
+		requestBody["status"] = "notStarted"
+	}
+
+	// Handle due date
+	if dueDate != "" {
+		requestBody["dueDateTime"] = map[string]string{
+			"dateTime": dueDate + "T00:00:00Z",
+			"timeZone": "UTC",
+		}
+	}
+
+	// Add categories
+	requestBody["categories"] = categories
+
+	// Convert to JSON
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return fmt.Errorf("error creating JSON request: %w", err)
+	}
+
+	// Create PATCH request
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("error creating API request: %w", err)
+	}
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error calling Microsoft Graph API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("Microsoft Graph API returned error: %s - %s", resp.Status, string(body))
+	}
+
+	return nil
+}

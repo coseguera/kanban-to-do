@@ -63,6 +63,8 @@ func main() {
 	http.HandleFunc("/list/", h.TasksHandler)                               // New route for tasks
 	http.HandleFunc("/api/updateTask", h.UpdateTaskHandler)                 // API endpoint for updating tasks
 	http.HandleFunc("/api/toggleImportance", h.ToggleTaskImportanceHandler) // API endpoint for toggling importance
+	http.HandleFunc("/api/getTaskDetails", h.GetTaskDetailsHandler)         // API endpoint for getting task details
+	http.HandleFunc("/api/updateTaskDetails", h.UpdateTaskDetailsHandler)   // API endpoint for updating task details
 	http.HandleFunc("/logout", h.LogoutHandler)
 
 	// Serve static files

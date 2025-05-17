@@ -272,3 +272,363 @@ async function updateTaskImportance(taskId, isImportant) {
         return false;
     }
 }
+
+// ==================== Task Detail Modal Functions ====================
+
+// Get modal elements
+const modal = document.getElementById('taskDetailModal');
+const closeBtn = document.querySelector('.close');
+const viewModeContainer = document.getElementById('viewModeContainer');
+const editModeContainer = document.getElementById('editModeContainer');
+const editTaskButton = document.getElementById('editTaskButton');
+const saveTaskButton = document.getElementById('saveTaskButton');
+const cancelEditButton = document.getElementById('cancelEditButton');
+
+// Current task being viewed/edited
+let currentTaskId = null;
+
+// Open task details modal
+function openTaskDetails(event, taskElement) {
+    // Prevent event from propagating (avoid starting drag)
+    event.stopPropagation();
+    
+    // Get task ID
+    const taskId = taskElement.getAttribute('data-task-id');
+    currentTaskId = taskId;
+    
+    // Show loading overlay
+    document.getElementById("loadingOverlay").style.display = "flex";
+    
+    // Fetch task details from server
+    fetchTaskDetails(taskId)
+        .then(task => {
+            if (task) {
+                // Update modal with task details
+                updateModalWithTaskDetails(task);
+                
+                // Show the modal
+                modal.style.display = "block";
+            } else {
+                showToast("Error loading task details", "error");
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching task details:", error);
+            showToast("Error: " + error.message, "error");
+        })
+        .finally(() => {
+            // Hide loading overlay
+            document.getElementById("loadingOverlay").style.display = "none";
+        });
+}
+
+// Fetch task details from the server
+async function fetchTaskDetails(taskId) {
+    try {
+        const params = new URLSearchParams();
+        params.append("listId", listId);
+        params.append("taskId", taskId);
+        
+        const response = await fetch(`/api/getTaskDetails?${params.toString()}`, {
+            method: "GET",
+            credentials: "same-origin"
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Server error:", errorText);
+            throw new Error(errorText || "Server error");
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching task details:", error);
+        throw error;
+    }
+}
+
+// Update modal with task details
+function updateModalWithTaskDetails(task) {
+    // Update view mode
+    document.getElementById('modalTaskTitle').textContent = task.title;
+    document.getElementById('viewTaskTitle').textContent = task.title;
+    document.getElementById('viewTaskStatus').textContent = task.status || 'Not Started';
+    document.getElementById('viewTaskImportance').textContent = task.importance === 'high' ? 'High' : 'Normal';
+    document.getElementById('viewTaskDueDate').textContent = task.dueDateTime || 'None';
+    document.getElementById('viewTaskCategories').textContent = task.categories && task.categories.length > 0 
+        ? task.categories.join(', ') 
+        : 'None';
+    
+    // Update edit mode form
+    document.getElementById('editTaskTitle').value = task.title;
+    
+    const statusSelect = document.getElementById('editTaskStatus');
+    if (task.status === 'completed') {
+        statusSelect.value = 'completed';
+    } else if (task.categories && task.categories.includes('Doing')) {
+        statusSelect.value = 'inProgress';
+    } else {
+        statusSelect.value = 'notStarted';
+    }
+    
+    document.getElementById('editTaskImportance').value = task.importance === 'high' ? 'high' : 'normal';
+    
+    // Handle due date (if provided in ISO format, convert to YYYY-MM-DD for input)
+    const dueDateInput = document.getElementById('editTaskDueDate');
+    if (task.dueDateTimeRaw) {
+        // Extract YYYY-MM-DD from ISO string
+        const dateOnly = task.dueDateTimeRaw.split('T')[0];
+        dueDateInput.value = dateOnly;
+    } else {
+        dueDateInput.value = '';
+    }
+    
+    document.getElementById('editTaskCategories').value = task.categories ? task.categories.join(', ') : '';
+    
+    // Show view mode container, hide edit mode container
+    viewModeContainer.style.display = 'block';
+    editModeContainer.style.display = 'none';
+}
+
+// Switch to edit mode
+function switchToEditMode() {
+    viewModeContainer.style.display = 'none';
+    editModeContainer.style.display = 'block';
+}
+
+// Switch to view mode
+function switchToViewMode() {
+    viewModeContainer.style.display = 'block';
+    editModeContainer.style.display = 'none';
+}
+
+// Save task changes
+async function saveTaskChanges() {
+    // Get values from form
+    const title = document.getElementById('editTaskTitle').value.trim();
+    const status = document.getElementById('editTaskStatus').value;
+    const importance = document.getElementById('editTaskImportance').value;
+    const dueDate = document.getElementById('editTaskDueDate').value;
+    const categoriesInput = document.getElementById('editTaskCategories').value.trim();
+    
+    // Validate input
+    if (!title) {
+        showToast("Title cannot be empty", "error");
+        return;
+    }
+    
+    // Parse categories
+    let categories = [];
+    if (categoriesInput) {
+        categories = categoriesInput.split(',').map(cat => cat.trim()).filter(cat => cat);
+    }
+    
+    // Prepare task data
+    const taskData = {
+        title,
+        status,
+        importance,
+        dueDate,
+        categories
+    };
+    
+    // Show loading overlay
+    document.getElementById("loadingOverlay").style.display = "flex";
+    
+    try {
+        // Send update to server
+        const success = await updateTask(currentTaskId, taskData);
+        
+        if (success) {
+            // Refresh task details
+            const updatedTask = await fetchTaskDetails(currentTaskId);
+            updateModalWithTaskDetails(updatedTask);
+            
+            // Update task card in the UI
+            updateTaskCardInUI(currentTaskId, updatedTask);
+            
+            // Switch back to view mode
+            switchToViewMode();
+            
+            showToast("Task updated successfully", "success");
+        } else {
+            showToast("Failed to update task", "error");
+        }
+    } catch (error) {
+        console.error("Error saving task changes:", error);
+        showToast("Error: " + error.message, "error");
+    } finally {
+        // Hide loading overlay
+        document.getElementById("loadingOverlay").style.display = "none";
+    }
+}
+
+// Update task on the server
+async function updateTask(taskId, taskData) {
+    try {
+        const params = new URLSearchParams();
+        params.append("listId", listId);
+        params.append("taskId", taskId);
+        params.append("title", taskData.title);
+        params.append("status", taskData.status);
+        params.append("importance", taskData.importance);
+        
+        if (taskData.dueDate) {
+            params.append("dueDate", taskData.dueDate);
+        }
+        
+        if (taskData.categories && taskData.categories.length > 0) {
+            params.append("categories", JSON.stringify(taskData.categories));
+        }
+        
+        const response = await fetch("/api/updateTaskDetails", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: params.toString(),
+            credentials: "same-origin"
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Server error:", errorText);
+            throw new Error(errorText || "Server error");
+        }
+        
+        return true;
+    } catch (error) {
+        console.error("Error updating task:", error);
+        throw error;
+    }
+}
+
+// Update task card in the UI
+function updateTaskCardInUI(taskId, task) {
+    const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+    if (!taskCard) return;
+    
+    // Update task title
+    const titleElement = taskCard.querySelector('.task-title');
+    if (titleElement) {
+        titleElement.textContent = task.title;
+    }
+    
+    // Update importance
+    if (task.importance === 'high') {
+        taskCard.classList.add('important');
+        taskCard.setAttribute('data-importance', 'true');
+    } else {
+        taskCard.classList.remove('important');
+        taskCard.setAttribute('data-importance', 'false');
+    }
+    
+    // Update completed status
+    if (task.status === 'completed') {
+        taskCard.classList.add('completed');
+    } else {
+        taskCard.classList.remove('completed');
+    }
+    
+    // Update categories
+    const categoriesElement = taskCard.querySelector('.task-categories');
+    if (categoriesElement) {
+        // Clear existing categories
+        categoriesElement.innerHTML = '';
+        
+        // Add new categories
+        if (task.categories && task.categories.length > 0) {
+            task.categories.forEach(category => {
+                const categoryTag = document.createElement('span');
+                categoryTag.className = 'category-tag';
+                categoryTag.textContent = category;
+                categoriesElement.appendChild(categoryTag);
+            });
+        }
+    } else if (task.categories && task.categories.length > 0) {
+        // Create categories container if it doesn't exist
+        const newCategoriesElement = document.createElement('div');
+        newCategoriesElement.className = 'task-categories';
+        
+        // Add categories
+        task.categories.forEach(category => {
+            const categoryTag = document.createElement('span');
+            categoryTag.className = 'category-tag';
+            categoryTag.textContent = category;
+            newCategoriesElement.appendChild(categoryTag);
+        });
+        
+        taskCard.appendChild(newCategoriesElement);
+    }
+    
+    // Update due date
+    let dueDateElement = taskCard.querySelector('.task-due');
+    if (task.dueDateTime) {
+        if (dueDateElement) {
+            dueDateElement.textContent = `Due: ${task.dueDateTime}`;
+        } else {
+            dueDateElement = document.createElement('span');
+            dueDateElement.className = 'task-due';
+            dueDateElement.textContent = `Due: ${task.dueDateTime}`;
+            taskCard.appendChild(dueDateElement);
+        }
+    } else if (dueDateElement) {
+        dueDateElement.remove();
+    }
+    
+    // If task status changed, move it to the appropriate column
+    const currentColumn = taskCard.closest('.kanban-column');
+    if (currentColumn) {
+        const currentColumnName = currentColumn.getAttribute('data-column');
+        let targetColumnName = '';
+        
+        if (task.status === 'completed') {
+            targetColumnName = 'Done';
+        } else if (task.categories && task.categories.includes('Doing')) {
+            targetColumnName = 'Doing';
+        } else {
+            targetColumnName = 'Not Started';
+        }
+        
+        if (currentColumnName !== targetColumnName) {
+            // Find the target column
+            const targetColumn = document.querySelector(`.kanban-column[data-column="${targetColumnName}"] .column-content`);
+            if (targetColumn) {
+                // Check for and remove the "no-tasks" message if it exists
+                const noTasksMessage = targetColumn.querySelector(".no-tasks");
+                if (noTasksMessage) {
+                    noTasksMessage.remove();
+                }
+                
+                // Move the task card to the new column
+                targetColumn.appendChild(taskCard);
+            }
+        }
+    }
+}
+
+// Event Listeners for Modal
+if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = "none";
+    });
+}
+
+if (editTaskButton) {
+    editTaskButton.addEventListener('click', switchToEditMode);
+}
+
+if (saveTaskButton) {
+    saveTaskButton.addEventListener('click', saveTaskChanges);
+}
+
+if (cancelEditButton) {
+    cancelEditButton.addEventListener('click', switchToViewMode);
+}
+
+// Close modal when clicking outside of it
+window.addEventListener('click', (event) => {
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+});

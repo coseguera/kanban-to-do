@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -413,4 +414,157 @@ func (h *Handler) ToggleTaskImportanceHandler(w http.ResponseWriter, r *http.Req
 	// Send a success response
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Task importance updated successfully"))
+}
+
+// GetTaskDetailsHandler handles retrieving details for a specific task
+func (h *Handler) GetTaskDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	// Only accept GET requests
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get the session ID from the cookie
+	sessionID, err := auth.GetSessionFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the session
+	session, ok := h.SessionManager.GetSession(sessionID)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Refresh the session if needed
+	if err := h.SessionManager.RefreshSessionIfNeeded(sessionID); err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse the query parameters
+	listID := r.URL.Query().Get("listId")
+	taskID := r.URL.Query().Get("taskId")
+
+	if listID == "" || taskID == "" {
+		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		return
+	}
+
+	// Get the task details from Microsoft API
+	task, err := h.Client.GetTaskDetails(session.AccessToken, listID, taskID)
+	if err != nil {
+		http.Error(w, "Error fetching task details: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Create a response object
+	response := map[string]interface{}{
+		"id":         task.ID,
+		"title":      task.Title,
+		"status":     task.Status,
+		"importance": task.Importance,
+		"categories": task.Categories,
+	}
+
+	// Add due date if it exists
+	if task.DueDateTime != nil {
+		// Store the raw datetime for form handling
+		response["dueDateTimeRaw"] = task.DueDateTime.DateTime
+
+		// Parse the due date for display
+		t, err := time.Parse(time.RFC3339, task.DueDateTime.DateTime)
+		if err == nil {
+			// Format as a more readable date
+			response["dueDateTime"] = t.Format("Jan 2, 2006")
+		} else {
+			response["dueDateTime"] = task.DueDateTime.DateTime
+		}
+	}
+
+	// Convert to JSON and send response
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+// UpdateTaskDetailsHandler handles updating a task's details
+func (h *Handler) UpdateTaskDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	// Only accept POST requests
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get the session ID from the cookie
+	sessionID, err := auth.GetSessionFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the session
+	session, ok := h.SessionManager.GetSession(sessionID)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Refresh the session if needed
+	if err := h.SessionManager.RefreshSessionIfNeeded(sessionID); err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse the form
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Extract form values
+	listID := r.FormValue("listId")
+	taskID := r.FormValue("taskId")
+	title := r.FormValue("title")
+	status := r.FormValue("status")
+	importance := r.FormValue("importance")
+	dueDate := r.FormValue("dueDate")
+	categoriesJson := r.FormValue("categories")
+
+	if listID == "" || taskID == "" || title == "" {
+		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		return
+	}
+
+	// Parse categories JSON
+	var categories []string
+	if categoriesJson != "" {
+		if err := json.Unmarshal([]byte(categoriesJson), &categories); err != nil {
+			http.Error(w, "Invalid categories format: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Update the task
+	if err := h.Client.UpdateTaskDetails(
+		session.AccessToken,
+		listID,
+		taskID,
+		title,
+		status,
+		importance,
+		dueDate,
+		categories,
+	); err != nil {
+		http.Error(w, "Error updating task: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Send success response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Task updated successfully"))
 }
