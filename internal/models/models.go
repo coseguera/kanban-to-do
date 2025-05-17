@@ -22,6 +22,7 @@ type Task struct {
 	Importance      string    `json:"importance"`
 	DueDateTime     *DateTime `json:"dueDateTime,omitempty"`
 	CreatedDateTime string    `json:"createdDateTime"`
+	Categories      []string  `json:"categories,omitempty"`
 }
 
 // DateTime represents a date and time in Microsoft Graph API
@@ -35,20 +36,27 @@ type TaskResponse struct {
 	Value []Task `json:"value"`
 }
 
+// KanbanColumn represents a column in the Kanban board
+type KanbanColumn struct {
+	Title string
+	Tasks []TaskDisplay
+}
+
 // TaskViewModel is used for rendering tasks in the template
 type TaskViewModel struct {
 	ListID   string
 	ListName string
-	Tasks    []TaskDisplay
+	Columns  []KanbanColumn
 }
 
 // TaskDisplay is a simplified version of Task for display
 type TaskDisplay struct {
 	ID          string
 	Title       string
-	Status      bool   // true if completed
-	Importance  bool   // true if high importance
-	DueDateTime string // formatted date string
+	Status      bool     // true if completed
+	Importance  bool     // true if high importance
+	DueDateTime string   // formatted date string
+	Categories  []string // list of categories
 }
 
 // TokenResponse represents the OAuth token response

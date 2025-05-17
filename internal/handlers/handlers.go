@@ -160,19 +160,19 @@ func (h *Handler) TasksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert tasks to display format
-	taskViewModel := models.TaskViewModel{
-		ListID:   listID,
-		ListName: list.DisplayName,
-		Tasks:    make([]models.TaskDisplay, 0, len(taskResp.Value)),
-	}
+	// Initialize columns for Kanban view
+	notStartedTasks := []models.TaskDisplay{}
+	doingTasks := []models.TaskDisplay{}
+	doneTasks := []models.TaskDisplay{}
 
+	// Convert tasks to display format and organize into columns
 	for _, task := range taskResp.Value {
 		taskDisplay := models.TaskDisplay{
 			ID:         task.ID,
 			Title:      task.Title,
 			Status:     task.Status == "completed",
 			Importance: task.Importance == "high",
+			Categories: task.Categories,
 		}
 
 		// Format the due date if present
@@ -187,7 +187,36 @@ func (h *Handler) TasksHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		taskViewModel.Tasks = append(taskViewModel.Tasks, taskDisplay)
+		// Determine which column this task belongs in
+		if task.Status == "completed" {
+			doneTasks = append(doneTasks, taskDisplay)
+		} else {
+			// Check if task has "Doing" category
+			hasDoing := false
+			for _, category := range task.Categories {
+				if strings.EqualFold(category, "Doing") {
+					hasDoing = true
+					break
+				}
+			}
+
+			if hasDoing {
+				doingTasks = append(doingTasks, taskDisplay)
+			} else {
+				notStartedTasks = append(notStartedTasks, taskDisplay)
+			}
+		}
+	}
+
+	// Create TaskViewModel with Kanban columns
+	taskViewModel := models.TaskViewModel{
+		ListID:   listID,
+		ListName: list.DisplayName,
+		Columns: []models.KanbanColumn{
+			{Title: "Not Started", Tasks: notStartedTasks},
+			{Title: "Doing", Tasks: doingTasks},
+			{Title: "Done", Tasks: doneTasks},
+		},
 	}
 
 	// Render the template
