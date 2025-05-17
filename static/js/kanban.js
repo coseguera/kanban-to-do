@@ -385,6 +385,9 @@ function updateModalWithTaskDetails(task) {
     
     document.getElementById('editTaskCategories').value = task.categories ? task.categories.join(', ') : '';
     
+    // Reset delete confirmation if it was previously shown
+    resetDeleteConfirmation();
+    
     // Show view mode container, hide edit mode container
     viewModeContainer.style.display = 'block';
     editModeContainer.style.display = 'none';
@@ -727,6 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
 if (closeBtn) {
     closeBtn.addEventListener('click', () => {
         modal.style.display = "none";
+        resetDeleteConfirmation();
     });
 }
 
@@ -743,25 +747,55 @@ if (cancelEditButton) {
 }
 
 const deleteTaskButton = document.getElementById('deleteTaskButton');
+const confirmDeleteButton = document.getElementById('confirmDeleteButton');
+const cancelDeleteButton = document.getElementById('cancelDeleteButton');
+const deleteConfirmation = document.querySelector('.delete-confirmation');
+
 if (deleteTaskButton) {
-    deleteTaskButton.addEventListener('click', deleteTask);
+    deleteTaskButton.addEventListener('click', showDeleteConfirmation);
+}
+
+if (confirmDeleteButton) {
+    confirmDeleteButton.addEventListener('click', performDeleteTask);
+}
+
+if (cancelDeleteButton) {
+    cancelDeleteButton.addEventListener('click', resetDeleteConfirmation);
 }
 
 // Close modal when clicking outside of it
 window.addEventListener('click', (event) => {
     if (event.target === modal) {
         modal.style.display = "none";
+        resetDeleteConfirmation();
     }
 });
 
-// Delete task
-async function deleteTask() {
-    if (!currentTaskId) return;
+// Show delete confirmation buttons
+function showDeleteConfirmation() {
+    // Show confirmation buttons
+    deleteConfirmation.style.display = 'inline-flex';
     
-    // Confirm deletion with the user
-    if (!confirm("Are you sure you want to delete this task? This cannot be undone.")) {
-        return;
+    // Disable the delete button
+    deleteTaskButton.classList.add('button-disabled');
+}
+
+// Reset delete confirmation state
+function resetDeleteConfirmation() {
+    // Hide confirmation buttons
+    if (deleteConfirmation) {
+        deleteConfirmation.style.display = 'none';
     }
+    
+    // Enable the delete button
+    if (deleteTaskButton) {
+        deleteTaskButton.classList.remove('button-disabled');
+    }
+}
+
+// Perform task deletion
+async function performDeleteTask() {
+    if (!currentTaskId) return;
     
     // Show loading overlay
     document.getElementById("loadingOverlay").style.display = "flex";
@@ -777,10 +811,13 @@ async function deleteTask() {
             // Remove the task card from the UI
             const taskCard = document.querySelector(`[data-task-id="${currentTaskId}"]`);
             if (taskCard) {
+                // Get the column before removing the task
+                const column = taskCard.closest('.column-content');
+                
+                // Remove the task card
                 taskCard.remove();
                 
                 // Check if column is now empty and add "no tasks" message if needed
-                const column = taskCard.closest('.column-content');
                 if (column && !column.querySelector('.task-card')) {
                     const noTasksMessage = document.createElement('div');
                     noTasksMessage.className = 'no-tasks';
@@ -792,10 +829,12 @@ async function deleteTask() {
             showToast("Task deleted successfully", "success");
         } else {
             showToast("Failed to delete task", "error");
+            resetDeleteConfirmation();
         }
     } catch (error) {
         console.error("Error deleting task:", error);
         showToast("Error: " + error.message, "error");
+        resetDeleteConfirmation();
     } finally {
         // Hide loading overlay
         document.getElementById("loadingOverlay").style.display = "none";

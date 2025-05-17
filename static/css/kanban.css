@@ -356,3 +356,34 @@ h1 {
 .delete-button:hover {
     background-color: #c82333;
 }
+
+/* Delete confirmation buttons */
+.delete-confirmation {
+    display: inline-flex;
+    margin-right: 10px;
+}
+
+.confirm-delete-button {
+    background-color: #dc3545;
+    color: white;
+    margin-right: 5px;
+}
+
+.confirm-delete-button:hover {
+    background-color: #bd2130;
+}
+
+.cancel-delete-button {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.cancel-delete-button:hover {
+    background-color: #e0a800;
+}
+
+.button-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
