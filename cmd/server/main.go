@@ -60,6 +60,7 @@ func main() {
 	http.HandleFunc("/login", h.LoginHandler)
 	http.HandleFunc("/auth/callback", h.CallbackHandler)
 	http.HandleFunc("/todoLists", h.TodoListsHandler)
+	http.HandleFunc("/list/", h.TasksHandler) // New route for tasks
 	http.HandleFunc("/logout", h.LogoutHandler)
 
 	// Set up HTTPS server

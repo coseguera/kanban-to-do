@@ -4,9 +4,11 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/coseguera/kanban-to-do/internal/auth"
+	"github.com/coseguera/kanban-to-do/internal/models"
 	"github.com/coseguera/kanban-to-do/internal/templates"
 	"github.com/coseguera/kanban-to-do/pkg/microsoft"
 )
@@ -111,6 +113,90 @@ func (h *Handler) TodoListsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tmpl.Execute(w, todoLists)
+}
+
+// TasksHandler handles the tasks page for a specific list
+func (h *Handler) TasksHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract list ID from URL path
+	path := r.URL.Path
+	parts := strings.Split(path, "/")
+	if len(parts) < 4 {
+		http.Error(w, "Invalid list ID", http.StatusBadRequest)
+		return
+	}
+	listID := parts[2]
+
+	// Get the session ID from the cookie
+	sessionID, err := auth.GetSessionFromRequest(r)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	// Get the session
+	session, ok := h.SessionManager.GetSession(sessionID)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	// Refresh the session if needed
+	if err := h.SessionManager.RefreshSessionIfNeeded(sessionID); err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	// Get the list details
+	list, err := h.Client.GetListDetails(session.AccessToken, listID)
+	if err != nil {
+		http.Error(w, "Error getting list details: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Get the tasks
+	taskResp, err := h.Client.GetListTasks(session.AccessToken, listID)
+	if err != nil {
+		http.Error(w, "Error getting tasks: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert tasks to display format
+	taskViewModel := models.TaskViewModel{
+		ListID:   listID,
+		ListName: list.DisplayName,
+		Tasks:    make([]models.TaskDisplay, 0, len(taskResp.Value)),
+	}
+
+	for _, task := range taskResp.Value {
+		taskDisplay := models.TaskDisplay{
+			ID:         task.ID,
+			Title:      task.Title,
+			Status:     task.Status == "completed",
+			Importance: task.Importance == "high",
+		}
+
+		// Format the due date if present
+		if task.DueDateTime != nil {
+			// Parse the due date
+			t, err := time.Parse(time.RFC3339, task.DueDateTime.DateTime)
+			if err == nil {
+				// Format as a more readable date
+				taskDisplay.DueDateTime = t.Format("Jan 2, 2006")
+			} else {
+				taskDisplay.DueDateTime = task.DueDateTime.DateTime
+			}
+		}
+
+		taskViewModel.Tasks = append(taskViewModel.Tasks, taskDisplay)
+	}
+
+	// Render the template
+	tmpl := templates.Templates["tasks"]
+	if tmpl == nil {
+		http.Error(w, "Error loading template", http.StatusInternalServerError)
+		return
+	}
+	tmpl.Execute(w, taskViewModel)
 }
 
 // LogoutHandler handles the logout request

@@ -14,8 +14,17 @@
             background-color: #f5f5f5;
             border-left: 5px solid #0078d4;
         }
-        .list-name { font-weight: bold; font-size: 18px; }
-        .list-id { color: #666; font-size: 14px; }
+        .list-name { 
+            font-weight: bold; 
+            font-size: 18px;
+            color: #0078d4;
+            text-decoration: none;
+            display: block;
+        }
+        .list-name:hover {
+            text-decoration: underline;
+            color: #005a9e;
+        }
         .logout { 
             background-color: #d9534f;
             color: white;
@@ -44,8 +53,7 @@
             <ul>
                 {{range .Value}}
                     <li>
-                        <div class="list-name">{{.DisplayName}}</div>
-                        <div class="list-id">ID: {{.ID}}</div>
+                        <a href="/list/{{.ID}}/tasks" class="list-name">{{.DisplayName}}</a>
                     </li>
                 {{end}}
             </ul>

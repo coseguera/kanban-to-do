@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tasks in {{.ListName}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #0078d4; }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #0078d4;
+            text-decoration: none;
+        }
+        .back-link:hover { text-decoration: underline; }
+        ul { list-style-type: none; padding: 0; }
+        li { 
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f5f5f5;
+            border-left: 5px solid #0078d4;
+            display: flex;
+            align-items: center;
+        }
+        .completed {
+            border-left-color: #4CAF50;
+            background-color: #f9f9f9;
+        }
+        .completed .task-title {
+            text-decoration: line-through;
+            color: #888;
+        }
+        .task-status {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+        }
+        .task-title { 
+            font-size: 16px;
+            flex-grow: 1;
+        }
+        .task-due {
+            color: #666;
+            font-size: 14px;
+            margin-left: 15px;
+        }
+        .important {
+            position: relative;
+        }
+        .important::after {
+            content: "!";
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background-color: #e74c3c;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .back-button {
+            background-color: #6c757d;
+            color: white;
+        }
+        .back-button:hover { background-color: #5a6268; }
+        .logout-button {
+            background-color: #d9534f;
+            color: white;
+        }
+        .logout-button:hover { background-color: #c9302c; }
+        .no-tasks { 
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/todoLists" class="back-link">← Back to lists</a>
+        <h1>Tasks in {{.ListName}}</h1>
+        
+        {{if .Tasks}}
+            <ul>
+                {{range .Tasks}}
+                    <li class="{{if .Status}}completed{{end}} {{if .Importance}}important{{end}}">
+                        <input type="checkbox" class="task-status" {{if .Status}}checked{{end}} disabled>
+                        <span class="task-title">{{.Title}}</span>
+                        {{if .DueDateTime}}
+                            <span class="task-due">Due: {{.DueDateTime}}</span>
+                        {{end}}
+                    </li>
+                {{end}}
+            </ul>
+        {{else}}
+            <div class="no-tasks">
+                <p>No tasks found in this list. Create some in your Microsoft To Do app!</p>
+            </div>
+        {{end}}
+        
+        <div class="nav-buttons">
+            <a href="/todoLists" class="button back-button">Back to Lists</a>
+            <a href="/logout" class="button logout-button">Logout</a>
+        </div>
+    </div>
+</body>
+</html>

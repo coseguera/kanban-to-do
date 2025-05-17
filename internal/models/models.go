@@ -14,6 +14,43 @@ type TodoListResponse struct {
 	Value []TodoList `json:"value"`
 }
 
+// Task represents a Microsoft To Do task
+type Task struct {
+	ID              string    `json:"id"`
+	Title           string    `json:"title"`
+	Status          string    `json:"status"`
+	Importance      string    `json:"importance"`
+	DueDateTime     *DateTime `json:"dueDateTime,omitempty"`
+	CreatedDateTime string    `json:"createdDateTime"`
+}
+
+// DateTime represents a date and time in Microsoft Graph API
+type DateTime struct {
+	DateTime string `json:"dateTime"`
+	TimeZone string `json:"timeZone"`
+}
+
+// TaskResponse represents the response from the Microsoft Graph API for tasks
+type TaskResponse struct {
+	Value []Task `json:"value"`
+}
+
+// TaskViewModel is used for rendering tasks in the template
+type TaskViewModel struct {
+	ListID   string
+	ListName string
+	Tasks    []TaskDisplay
+}
+
+// TaskDisplay is a simplified version of Task for display
+type TaskDisplay struct {
+	ID          string
+	Title       string
+	Status      bool   // true if completed
+	Importance  bool   // true if high importance
+	DueDateTime string // formatted date string
+}
+
 // TokenResponse represents the OAuth token response
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
