@@ -426,3 +426,29 @@ func (c *Client) CreateTask(accessToken string, listID string, title string) (st
 
 	return task.ID, nil
 }
+
+// DeleteTask deletes a task from a list
+func (c *Client) DeleteTask(accessToken string, listID string, taskID string) error {
+	url := fmt.Sprintf("%s/%s/tasks/%s", c.config.GraphURL, listID, taskID)
+
+	// Create DELETE request
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return fmt.Errorf("error creating API request: %w", err)
+	}
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error calling Microsoft Graph API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("Microsoft Graph API returned error: %s - %s", resp.Status, string(body))
+	}
+
+	return nil
+}

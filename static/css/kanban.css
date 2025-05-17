@@ -345,3 +345,14 @@ h1 {
 .add-task-button:hover {
     background-color: #0056a3;
 }
+
+/* Delete Button */
+.delete-button {
+    background-color: #dc3545;
+    color: white;
+    margin-right: 10px;
+}
+
+.delete-button:hover {
+    background-color: #c82333;
+}

@@ -742,9 +742,91 @@ if (cancelEditButton) {
     cancelEditButton.addEventListener('click', switchToViewMode);
 }
 
+const deleteTaskButton = document.getElementById('deleteTaskButton');
+if (deleteTaskButton) {
+    deleteTaskButton.addEventListener('click', deleteTask);
+}
+
 // Close modal when clicking outside of it
 window.addEventListener('click', (event) => {
     if (event.target === modal) {
         modal.style.display = "none";
     }
 });
+
+// Delete task
+async function deleteTask() {
+    if (!currentTaskId) return;
+    
+    // Confirm deletion with the user
+    if (!confirm("Are you sure you want to delete this task? This cannot be undone.")) {
+        return;
+    }
+    
+    // Show loading overlay
+    document.getElementById("loadingOverlay").style.display = "flex";
+    
+    try {
+        // Send delete request to server
+        const success = await deleteTaskFromServer(currentTaskId);
+        
+        if (success) {
+            // Close the modal
+            modal.style.display = "none";
+            
+            // Remove the task card from the UI
+            const taskCard = document.querySelector(`[data-task-id="${currentTaskId}"]`);
+            if (taskCard) {
+                taskCard.remove();
+                
+                // Check if column is now empty and add "no tasks" message if needed
+                const column = taskCard.closest('.column-content');
+                if (column && !column.querySelector('.task-card')) {
+                    const noTasksMessage = document.createElement('div');
+                    noTasksMessage.className = 'no-tasks';
+                    noTasksMessage.innerHTML = '<p>No tasks in this column</p>';
+                    column.appendChild(noTasksMessage);
+                }
+            }
+            
+            showToast("Task deleted successfully", "success");
+        } else {
+            showToast("Failed to delete task", "error");
+        }
+    } catch (error) {
+        console.error("Error deleting task:", error);
+        showToast("Error: " + error.message, "error");
+    } finally {
+        // Hide loading overlay
+        document.getElementById("loadingOverlay").style.display = "none";
+    }
+}
+
+// Delete task from server
+async function deleteTaskFromServer(taskId) {
+    try {
+        const params = new URLSearchParams();
+        params.append("listId", listId);
+        params.append("taskId", taskId);
+        
+        const response = await fetch("/api/deleteTask", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: params.toString(),
+            credentials: "same-origin"
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Server error:", errorText);
+            throw new Error(errorText || "Server error");
+        }
+        
+        return true;
+    } catch (error) {
+        console.error("Error deleting task:", error);
+        throw error;
+    }
+}

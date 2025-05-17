@@ -631,3 +631,57 @@ func (h *Handler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// DeleteTaskHandler handles deleting a task
+func (h *Handler) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	// Only accept POST requests
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get the session ID from the cookie
+	sessionID, err := auth.GetSessionFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the session
+	session, ok := h.SessionManager.GetSession(sessionID)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Refresh the session if needed
+	if err := h.SessionManager.RefreshSessionIfNeeded(sessionID); err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse the form
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Extract form values
+	listID := r.FormValue("listId")
+	taskID := r.FormValue("taskId")
+
+	if listID == "" || taskID == "" {
+		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		return
+	}
+
+	// Delete the task
+	if err := h.Client.DeleteTask(session.AccessToken, listID, taskID); err != nil {
+		http.Error(w, "Error deleting task: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Send success response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Task deleted successfully"))
+}
