@@ -373,12 +373,31 @@ h1 {
     background-color: #bd2130;
 }
 
-.cancel-delete-button {
+/* Action buttons colors */
+.edit-button {
+    background-color: #007bff;
+    color: white;
+}
+
+.edit-button:hover {
+    background-color: #0069d9;
+}
+
+.save-button {
+    background-color: #28a745;
+    color: white;
+}
+
+.save-button:hover {
+    background-color: #218838;
+}
+
+.cancel-button {
     background-color: #ffc107;
     color: #212529;
 }
 
-.cancel-delete-button:hover {
+.cancel-button:hover {
     background-color: #e0a800;
 }
 
@@ -386,4 +405,32 @@ h1 {
     opacity: 0.5;
     cursor: not-allowed;
     pointer-events: none;
+}
+
+/* Action buttons colors */
+.edit-button {
+    background-color: #007bff;
+    color: white;
+}
+
+.edit-button:hover {
+    background-color: #0069d9;
+}
+
+.save-button {
+    background-color: #28a745;
+    color: white;
+}
+
+.save-button:hover {
+    background-color: #218838;
+}
+
+.cancel-button {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.cancel-button:hover {
+    background-color: #e0a800;
 }
