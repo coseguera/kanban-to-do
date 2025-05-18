@@ -1,12 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your To Do Lists</title>
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/todoLists.css">
+    <link rel="stylesheet" href="/static/css/dark-mode.css">
 </head>
 <body>
     <div class="container">
+        <div class="theme-switch-wrapper">
+            <span>Light</span>
+            <label class="theme-switch" for="checkbox">
+                <input type="checkbox" id="checkbox" />
+                <div class="slider"></div>
+            </label>
+            <span>Dark</span>
+        </div>
         <h1>Your To Do Lists</h1>
         {{if .Value}}
             <ul>
@@ -23,5 +34,6 @@
         {{end}}
         <a href="/logout" class="logout-button button">Logout</a>
     </div>
+    <script src="/static/js/theme.js"></script>
 </body>
 </html>

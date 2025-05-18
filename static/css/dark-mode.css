@@ -1,0 +1,248 @@
+/* Dark Mode Styles */
+:root {
+    /* Light theme variables (default) */
+    --bg-color: #f5f5f5;
+    --text-color: #333;
+    --card-bg: #ffffff;
+    --header-color: #0078d4;
+    --border-color: #ddd;
+    --kanban-column-bg: #f0f0f0;
+    --modal-bg: #fefefe;
+    --modal-header-bg: #f8f9fa;
+    --input-bg: #ffffff;
+    --input-border: #ccc;
+    --hover-shadow: rgba(0, 0, 0, 0.1);
+    --toast-bg: #333;
+    --toast-success-bg: #28a745;
+    --toast-error-bg: #dc3545;
+    --container-bg: #ffffff;
+    --list-item-bg: #f5f5f5;
+}
+
+/* Dark theme variables */
+[data-theme="dark"] {
+    --bg-color: #222222;
+    --text-color: #e0e0e0;
+    --card-bg: #333333;
+    --header-color: #4da8ff;
+    --border-color: #444;
+    --kanban-column-bg: #2a2a2a;
+    --modal-bg: #333333;
+    --modal-header-bg: #2a2a2a;
+    --input-bg: #444444;
+    --input-border: #555;
+    --hover-shadow: rgba(255, 255, 255, 0.1);
+    --toast-bg: #555;
+    --toast-success-bg: #28a745;
+    --toast-error-bg: #dc3545;
+    --container-bg: #333333;
+    --list-item-bg: #2a2a2a;
+}
+
+/* Apply variables to elements */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container {
+    background-color: var(--container-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+    box-shadow: 0 0 10px var(--hover-shadow);
+    transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+h1 {
+    color: var(--header-color);
+    transition: color 0.3s ease;
+}
+
+.card, .task-card {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    box-shadow: 0 1px 3px var(--hover-shadow);
+    transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover, .task-card:hover {
+    box-shadow: 0 5px 15px var(--hover-shadow);
+}
+
+.kanban-column {
+    background-color: var(--kanban-column-bg);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.modal-content {
+    background-color: var(--modal-bg);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.modal-header {
+    background-color: var(--modal-header-bg);
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.modal-header h2 {
+    color: var(--text-color);
+    transition: color 0.3s ease;
+}
+
+.form-control {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.form-group label {
+    color: var(--text-color);
+    transition: color 0.3s ease;
+}
+
+.back-link {
+    color: var(--header-color);
+    transition: color 0.3s ease;
+}
+
+.no-tasks, .no-lists {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.toast {
+    background-color: var(--toast-bg);
+    transition: background-color 0.3s ease;
+}
+
+.add-task-container {
+    background-color: var(--kanban-column-bg);
+    border-top: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.new-task-input {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* TodoLists page styles */
+li {
+    background-color: var(--list-item-bg);
+    border-left: 5px solid var(--header-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.list-name {
+    color: var(--header-color);
+    transition: color 0.3s ease;
+}
+
+.list-name:hover {
+    color: var(--header-color);
+    opacity: 0.8;
+}
+
+/* Home page styles */
+.login-button {
+    background-color: var(--header-color);
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+.login-button:hover {
+    background-color: var(--header-color);
+    opacity: 0.9;
+}
+
+/* Theme toggle switch styles */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.theme-switch {
+    display: inline-block;
+    height: 24px;
+    position: relative;
+    width: 50px;
+}
+
+.theme-switch input {
+    display: none;
+}
+
+.slider {
+    background-color: #ccc;
+    bottom: 0;
+    cursor: pointer;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    background-color: white;
+    bottom: 4px;
+    content: "";
+    height: 16px;
+    left: 4px;
+    position: absolute;
+    transition: .4s;
+    width: 16px;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.theme-switch-wrapper span {
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+/* Dark mode specific adjustments */
+[data-theme="dark"] .column-content {
+    scrollbar-color: #666 #333;
+}
+
+[data-theme="dark"] .spinner {
+    border: 4px solid #333;
+    border-top: 4px solid #4da8ff;
+}
+
+[data-theme="dark"] .importance-star:hover,
+[data-theme="dark"] .task-card.important .importance-star {
+    color: #ffd700;
+}
+
+/* Accessibility class for screen readers */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
