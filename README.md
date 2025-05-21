@@ -92,6 +92,14 @@ This project is available under a dual license:
 
 See the [LICENSE.md](LICENSE.md) file for details.
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.
+
+## Security
+
+For security issues, please refer to [SECURITY.md](SECURITY.md).
+
 ## Security Considerations
 
 - **Never commit secrets or certificate files to the repository**
