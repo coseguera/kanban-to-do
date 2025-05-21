@@ -84,6 +84,14 @@ kanban-to-do/
 - Token refresh is handled automatically when tokens expire
 - User sessions are stored in memory and will be lost when the server restarts
 
+## License
+
+This project is available under a dual license:
+- Free for non-commercial use under the MIT License
+- Requires a paid commercial license for any for-profit use
+
+See the [LICENSE.md](LICENSE.md) file for details.
+
 ## Security Considerations
 
 - **Never commit secrets or certificate files to the repository**
