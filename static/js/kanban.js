@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2025 Carlos Oseguera (@coseguera)
+ * This code is licensed under a dual-license model.
+ * See LICENSE.md for more information.
+ */
+
 // Store the list ID for API calls
 const listId = document.getElementById('listIdField').value;
 

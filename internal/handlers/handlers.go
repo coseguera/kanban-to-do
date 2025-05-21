@@ -1,3 +1,7 @@
+// Copyright (c) 2025 Carlos Oseguera (@coseguera)
+// This code is licensed under a dual-license model.
+// See LICENSE.md for more information.
+
 // Package handlers provides HTTP handlers for the application
 package handlers
 

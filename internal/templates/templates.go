@@ -1,3 +1,7 @@
+// Copyright (c) 2025 Carlos Oseguera (@coseguera)
+// This code is licensed under a dual-license model.
+// See LICENSE.md for more information.
+
 // Package templates handles the HTML templates used by the application
 package templates
 

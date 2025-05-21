@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) 2025 Carlos Oseguera (@coseguera)
+# This code is licensed under a dual-license model.
+# See LICENSE.md for more information.
 
 # Script to prepare the repository for public release by removing sensitive files
 
